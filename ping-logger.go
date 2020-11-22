@@ -11,8 +11,10 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+var version string
+
 func main() {
-	fmt.Println("Starting")
+	fmt.Println("Starting Ping-Logger", version)
 	duration, interval, logpath, hostIP := getConfigValues()
 
 	fmt.Println("Logging to", logpath)
@@ -21,11 +23,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// defer logfile.Close()
 
-	// logger := log.New(logfile, "", log.LstdFlags)
 	log.SetOutput(logfile)
-	log.Println("Running app against", hostIP)
+	log.Printf("Ping-Logger %s. Running app against %s", version, hostIP)
 
 	setInterval(pingHost, hostIP, time.Second*time.Duration(interval))
 
