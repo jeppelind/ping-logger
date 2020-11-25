@@ -27,7 +27,7 @@ func main() {
 	log.SetOutput(logfile)
 	log.Printf("Ping-Logger %s. Running app against %s", version, hostIP)
 
-	setInterval(pingHost, hostIP, time.Second*time.Duration(interval))
+	pingWithInterval(hostIP, time.Second*time.Duration(interval))
 
 	time.Sleep(time.Second * time.Duration(duration))
 
@@ -53,17 +53,20 @@ func getConfigValues() (int, int, string, string) {
 	return duration, interval, logpath, hostIP
 }
 
-func setInterval(function func(string), param string, delay time.Duration) {
+func pingWithInterval(host string, delay time.Duration) {
 	ticker := time.NewTicker(delay)
 	go func() {
 		for range ticker.C {
-			function(param)
+			packetLoss := pingHost(host)
+			if packetLoss > 0 {
+				log.Printf("Could not reach host %s", host)
+			}
 		}
 	}()
 }
 
-func pingHost(ip string) {
-	pinger, err := ping.NewPinger(ip)
+func pingHost(host string) (float64) {
+	pinger, err := ping.NewPinger(host)
 	if err != nil {
 		panic(err)
 	}
@@ -72,14 +75,11 @@ func pingHost(ip string) {
 	pinger.Count = 1
 	pinger.SetPrivileged(true)
 
-	pinger.OnFinish = func(stats *ping.Statistics) {
-		if stats.PacketLoss > 0 {
-			log.Println("Could not reach host")
-		}
-	}
-
 	err = pinger.Run()
 	if err != nil {
 		panic(err)
 	}
+
+	stats := pinger.Statistics()
+	return stats.PacketLoss
 }
